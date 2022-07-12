@@ -12,6 +12,9 @@ process CENTRIFUGE_DB_PREPARATION {
     tuple val("${db.toString().replace(".tar.gz", "")}"), path("*.cf"), emit: db
     path "versions.yml"                                               , emit: versions
 
+    when:
+    !params.skip_taxonomic_classification
+
     script:
     """
     tar -xf "${db}"

@@ -23,6 +23,9 @@ process MULTIQC {
     path "*_plots"             , optional:true, emit: plots
     path "versions.yml"        , emit: versions
 
+    when:
+    !params.skip_fastqc
+
     script:
     def args = task.ext.args ?: ''
     custom_config_file = params.multiqc_config ? "--config $mqc_custom_config" : ''
