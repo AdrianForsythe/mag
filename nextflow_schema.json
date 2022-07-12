@@ -23,7 +23,7 @@
                     "type": "boolean",
                     "description": "Specifies that the input is single-end reads.",
                     "fa_icon": "fas fa-align-center",
-                    "help_text": "By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--input`. For example:\n\n```bash\n--single_end --input '*.fastq'\n```\n\nIt is not possible to run a mixture of single-end and paired-end files in one run."
+                    "help_text": "By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--input`. For example:\n\n```bash\n--single_end --input '*.fastq.gz'\n```\n\nIt is not possible to run a mixture of single-end and paired-end files in one run."
                 },
                 "outdir": {
                     "type": "string",
@@ -286,7 +286,7 @@
                     "description": "Skip fastp quality control for short reads.",
                     "help_text": "Use this option to skip fastp quality control for short reads. This is useful if you have already done the quality control and you want to skip it again.\n\nDefault: fastp quality control is performed."
                 },
-                "skip_adapter_trimming": {
+                "skip_sr_adapter_trimming": {
                     "type": "boolean",
                     "default": false,
                     "description": "Skip adapter removal for short reads.",
@@ -381,7 +381,7 @@
             "description": "",
             "default": "",
             "properties": {
-                "skip_adapter_trimming": {
+                "skip_lr_adapter_trimming": {
                     "type": "boolean",
                     "description": "Skip removing adapter sequences from long reads."
                 },
@@ -419,6 +419,10 @@
             "description": "Taxonomic classification is disabled by default. You have to specify one of the options below to activate it.",
             "default": "",
             "properties": {
+                "skip_taxonomic_classification": {
+                    "type": "boolean",
+                    "description": "Skip taxonomic profiling."
+                },
                 "centrifuge_db": {
                     "type": "string",
                     "description": "Database for taxonomic binning with centrifuge.",

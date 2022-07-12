@@ -23,7 +23,7 @@ process ADAPTERREMOVAL {
     path "versions.yml"                                        , emit: versions
 
     when:
-    !params.skip_adapter_trimming
+    !params.skip_sr_adapter_trimming
 
     script:
     def args = task.ext.args ?: ''

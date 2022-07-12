@@ -117,7 +117,7 @@ include { CUSTOM_DUMPSOFTWAREVERSIONS            } from '../modules/nf-core/modu
 /* --  Create channel for reference databases  -- */
 ////////////////////////////////////////////////////
 
-if (!params.skip_host_genome){
+if (!params.skip_host_removal){
     if ( params.host_genome ) {
         host_fasta = params.genomes[params.host_genome].fasta ?: false
         ch_host_fasta = Channel
@@ -211,12 +211,14 @@ workflow MAG {
                                     Preprocessing and QC for short reads
     ================================================================================
     */
+    if (!params.skip_fastqc) {
+        FASTQC_RAW (
+            ch_raw_short_reads
+        )
+        ch_versions = ch_versions.mix(FASTQC_RAW.out.versions.first())
+    }
 
-    FASTQC_RAW (
-        ch_raw_short_reads
-    )
-    ch_versions = ch_versions.mix(FASTQC_RAW.out.versions.first())
-    if (!params.skip_adapter_trimming) {
+    if (!params.skip_sr_adapter_trimming) {
         if ( params.clip_tool == 'fastp' ) {
             ch_clipmerge_out = FASTP (
                 ch_raw_short_reads,
@@ -275,11 +277,7 @@ workflow MAG {
             ch_bowtie2_removal_host_multiqc = BOWTIE2_HOST_REMOVAL_ALIGN.out.log
             ch_versions = ch_versions.mix(BOWTIE2_HOST_REMOVAL_ALIGN.out.versions.first())
         }
-    } else {
-        ch_short_reads = ch_short_reads
-        ch_bowtie2_removal_host_multiqc = Channel.empty()
     }
-
     if(!params.keep_phix) {
         BOWTIE2_PHIX_REMOVAL_BUILD (
             ch_phix_db_file
@@ -292,10 +290,12 @@ workflow MAG {
         ch_versions = ch_versions.mix(BOWTIE2_PHIX_REMOVAL_ALIGN.out.versions.first())
     }
 
-    FASTQC_TRIMMED (
-        ch_short_reads
-    )
-    ch_versions = ch_versions.mix(FASTQC_TRIMMED.out.versions)
+    if(!params.skip_sr_adapter_trimming && !params.skip_lr_adapter_trimming) {
+        FASTQC_TRIMMED (
+            ch_short_reads
+        )
+        ch_versions = ch_versions.mix(FASTQC_TRIMMED.out.versions)
+    }
 
     /*
     ================================================================================
@@ -308,7 +308,7 @@ workflow MAG {
     ch_versions = ch_versions.mix(NANOPLOT_RAW.out.versions.first())
 
     ch_long_reads = ch_raw_long_reads
-    if (!params.skip_adapter_trimming) {
+    if (!params.skip_lr_adapter_trimming) {
         PORECHOP (
             ch_raw_long_reads
         )
@@ -351,35 +351,38 @@ workflow MAG {
                                     Taxonomic information
     ================================================================================
     */
-    CENTRIFUGE_DB_PREPARATION ( ch_centrifuge_db_file )
-    CENTRIFUGE (
-        ch_short_reads,
-        CENTRIFUGE_DB_PREPARATION.out.db
-    )
-    ch_versions = ch_versions.mix(CENTRIFUGE.out.versions.first())
+    if (!params.skip_taxonomic_classification) {
 
-    KRAKEN2_DB_PREPARATION (
-        ch_kraken2_db_file
-    )
-    KRAKEN2 (
-        ch_short_reads,
-        KRAKEN2_DB_PREPARATION.out.db
-    )
-    ch_versions = ch_versions.mix(KRAKEN2.out.versions.first())
-
-    if (( params.centrifuge_db || params.kraken2_db ) && !params.skip_krona){
-        KRONA_DB ()
-        ch_tax_classifications = CENTRIFUGE.out.results_for_krona.mix(KRAKEN2.out.results_for_krona)
-            . map { classifier, meta, report ->
-                def meta_new = meta.clone()
-                meta_new.classifier  = classifier
-                [ meta_new, report ]
-            }
-        KRONA (
-            ch_tax_classifications,
-            KRONA_DB.out.db.collect()
+        CENTRIFUGE_DB_PREPARATION ( ch_centrifuge_db_file )
+        CENTRIFUGE (
+            ch_short_reads,
+            CENTRIFUGE_DB_PREPARATION.out.db
         )
-        ch_versions = ch_versions.mix(KRONA.out.versions.first())
+        ch_versions = ch_versions.mix(CENTRIFUGE.out.versions.first())
+
+        KRAKEN2_DB_PREPARATION (
+            ch_kraken2_db_file
+        )
+        KRAKEN2 (
+            ch_short_reads,
+            KRAKEN2_DB_PREPARATION.out.db
+        )
+        ch_versions = ch_versions.mix(KRAKEN2.out.versions.first())
+
+        if (( params.centrifuge_db || params.kraken2_db ) && !params.skip_krona) {
+            KRONA_DB ()
+            ch_tax_classifications = CENTRIFUGE.out.results_for_krona.mix(KRAKEN2.out.results_for_krona)
+                .map { classifier, meta, report ->
+                    def meta_new = meta.clone()
+                    meta_new.classifier  = classifier
+                    [ meta_new, report ]
+                }
+            KRONA (
+                ch_tax_classifications,
+                KRONA_DB.out.db.collect()
+            )
+            ch_versions = ch_versions.mix(KRONA.out.versions.first())
+        }
     }
 
     /*
@@ -401,7 +404,7 @@ workflow MAG {
                     meta.group       = group
                     meta.single_end  = params.single_end
                     if (!params.single_end) [ meta, reads.collect { it[0] }, reads.collect { it[1] } ]
-                    else [ meta, reads.collect { it }, [] ]
+                    else [ meta, reads.collect { it[0] }, [] ]
             }
         // long reads
         // group and set group as new id
@@ -717,26 +720,28 @@ workflow MAG {
 
     ch_multiqc_readprep = Channel.empty()
 
-    if (!params.skip_adapter_trimming) {
+    if (!params.skip_sr_adapter_trimming) {
         if ( params.clip_tool == "fastp") {
             ch_multiqc_readprep = ch_multiqc_readprep.mix(FASTP.out.json.collect{it[1]}.ifEmpty([]))
         } else if ( params.clip_tool == "adapterremoval" ) {
             ch_multiqc_readprep = ch_multiqc_readprep.mix(ADAPTERREMOVAL_PE.out.log.collect{it[1]}.ifEmpty([]), ADAPTERREMOVAL_SE.out.log.collect{it[1]}.ifEmpty([]))}
     }
 
-    MULTIQC (
-        ch_multiqc_files.collect(),
-        ch_multiqc_custom_config.collect().ifEmpty([]),
-        FASTQC_RAW.out.zip.collect{it[1]}.ifEmpty([]),
-        FASTQC_TRIMMED.out.zip.collect{it[1]}.ifEmpty([]),
-        ch_bowtie2_removal_host_multiqc.collect{it[1]}.ifEmpty([]),
-        ch_quast_multiqc.collect().ifEmpty([]),
-        ch_bowtie2_assembly_multiqc.collect().ifEmpty([]),
-        ch_busco_multiqc.collect().ifEmpty([]),
-        ch_multiqc_readprep.collect().ifEmpty([]),
-    )
-    multiqc_report = MULTIQC.out.report.toList()
-    ch_versions    = ch_versions.mix(MULTIQC.out.versions)
+    if (!params.skip_fastqc) {
+        MULTIQC (
+            ch_multiqc_files.collect(),
+            ch_multiqc_custom_config.collect().ifEmpty([]),
+            FASTQC_RAW.out.zip.collect{it[1]}.ifEmpty([]),
+            FASTQC_TRIMMED.out.zip.collect{it[1]}.ifEmpty([]),
+            ch_bowtie2_removal_host_multiqc.collect{it[1]}.ifEmpty([]),
+            ch_quast_multiqc.collect().ifEmpty([]),
+            ch_bowtie2_assembly_multiqc.collect().ifEmpty([]),
+            ch_busco_multiqc.collect().ifEmpty([]),
+            ch_multiqc_readprep.collect().ifEmpty([]),
+        )
+        multiqc_report = MULTIQC.out.report.toList()
+        ch_versions    = ch_versions.mix(MULTIQC.out.versions)
+    }
 }
 
 /*
