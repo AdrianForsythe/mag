@@ -15,6 +15,9 @@ process KRAKEN2 {
     path  "kraken2_report.txt"                            , emit: report
     path "versions.yml"                                   , emit: versions
 
+    when:
+    !params.skip_taxonomic_classification
+
     script:
     def input = meta.single_end ? "\"${reads}\"" :  "--paired \"${reads[0]}\" \"${reads[1]}\""
     """

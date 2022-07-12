@@ -16,6 +16,9 @@ process CENTRIFUGE {
     path "kreport.txt"                                       , emit: kreport
     path "versions.yml"                                      , emit: versions
 
+    when:
+    !params.skip_taxonomic_classification
+
     script:
     def input = meta.single_end ? "-U \"${reads}\"" :  "-1 \"${reads[0]}\" -2 \"${reads[1]}\""
     """

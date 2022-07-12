@@ -14,6 +14,9 @@ process KRONA {
     path "*.html"       , emit: html
     path "versions.yml" , emit: versions
 
+    when:
+    !params.skip_krona
+
     script:
     """
     ktImportTaxonomy "$report" -tax taxonomy

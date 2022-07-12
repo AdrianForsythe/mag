@@ -12,6 +12,9 @@ process KRAKEN2_DB_PREPARATION {
     tuple val("${db.simpleName}"), path("database/*.k2d"), emit: db
     path "versions.yml"                                  , emit: versions
 
+    when:
+    !params.skip_taxonomic_classification
+
     script:
     """
     mkdir db_tmp
