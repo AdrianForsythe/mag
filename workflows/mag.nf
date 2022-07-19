@@ -68,6 +68,8 @@ include { KRAKEN2_DB_PREPARATION                              } from '../modules
 include { KRAKEN2                                             } from '../modules/local/kraken2'
 include { KRONA_DB                                            } from '../modules/local/krona_db'
 include { KRONA                                               } from '../modules/local/krona'
+include { DECONTAMINATE                                       } from '../modules/local/decontaminate.nf'
+include { TAXA_LIST                                           } from '../modules/local/taxa_list.nf'
 include { POOL_SINGLE_READS                                   } from '../modules/local/pool_single_reads'
 include { POOL_PAIRED_READS                                   } from '../modules/local/pool_paired_reads'
 include { POOL_SINGLE_READS as POOL_LONG_READS                } from '../modules/local/pool_single_reads'
@@ -385,6 +387,33 @@ workflow MAG {
         }
     }
 
+
+    /*
+    ================================================================================
+                                Decontam Reads
+    ================================================================================
+    */
+    // only works for short reads
+    if (params.decontaminate_reads & params.taxa_list != null) {
+
+        // TODO: make channel for grabbing kraken input?
+        // ch_kraken_input =
+
+        TAXA_LIST ( params.taxa_list)
+
+        ch_short_reads_kraken = ch_short_reads.mix()
+
+        decontam_output = Channel.empty()
+
+        DECONTAMINATE (ch_short_reads_kraken, TAXA_LIST.taxa_list)
+        ch_decontam_short_reads = ch_short_reads.mix(DECONTAMINATE.decontam_output)
+
+    } else {
+        ch_taxa_list = Channel.empty()
+        decontam_output = Channel.empty()
+        ch_decontam_short_reads = ch_short_reads
+    }
+
     /*
     ================================================================================
                                     Assembly
@@ -395,7 +424,7 @@ workflow MAG {
     if (params.coassemble_group) {
         // short reads
         // group and set group as new id
-        ch_short_reads_grouped = ch_short_reads
+        ch_short_reads_grouped = ch_decontam_short_reads
             .map { meta, reads -> [ meta.group, meta, reads ] }
             .groupTuple(by: 0)
             .map { group, metas, reads ->
@@ -418,7 +447,7 @@ workflow MAG {
                 [ meta, reads.collect { it } ]
             }
     } else {
-        ch_short_reads_grouped = ch_short_reads
+        ch_short_reads_grouped = ch_decontam_short_reads
             .map { meta, reads ->
                     if (!params.single_end){ [ meta, [reads[0]], [reads[1]] ] }
                     else [ meta, [reads], [] ] }
@@ -455,7 +484,7 @@ workflow MAG {
             ch_long_reads_spades = POOL_LONG_READS.out.reads
         }
     } else {
-        ch_short_reads_spades = ch_short_reads
+        ch_short_reads_spades = ch_decontam_short_reads
         ch_long_reads_spades = ch_long_reads
             .map { meta, reads -> [ meta, [reads] ] }
     }
@@ -526,7 +555,7 @@ workflow MAG {
 
     BINNING_PREPARATION (
         ch_assemblies,
-        ch_short_reads
+        ch_decontam_short_reads
     )
 
     /*
@@ -553,12 +582,12 @@ workflow MAG {
                 BINNING_PREPARATION.out.grouped_mappings
                     .join(ANCIENT_DNA_ASSEMLY_VALIDATION.out.contigs_recalled)
                     .map{ it -> [ it[0], it[4], it[2], it[3] ] }, // [meta, contigs_recalled, bam, bais]
-                ch_short_reads
+                ch_decontam_short_reads
             )
         } else {
             BINNING (
                 BINNING_PREPARATION.out.grouped_mappings,
-                ch_short_reads
+                ch_decontam_short_reads
             )
         }
 
@@ -572,7 +601,7 @@ workflow MAG {
 
         if ( params.refine_bins_dastool && !params.skip_metabat2 && !params.skip_maxbin2 ) {
 
-            BINNING_REFINEMENT ( BINNING_PREPARATION.out.grouped_mappings, BINNING.out.bins, BINNING.out.metabat2depths, ch_short_reads )
+            BINNING_REFINEMENT ( BINNING_PREPARATION.out.grouped_mappings, BINNING.out.bins, BINNING.out.metabat2depths, ch_decontam_short_reads )
             ch_versions = ch_versions.mix(BINNING_REFINEMENT.out.versions)
 
             if ( params.postbinning_input == 'raw_bins_only' ) {
