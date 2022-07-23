@@ -500,6 +500,25 @@
                     "default": true,
                     "description": "Reduce GTDB-Tk memory consumption by running pplacer in a setting writing to disk.",
                     "help_text": "Will be slower. Set to `false` to turn this off."
+                },
+                "phylophlan": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Run phylophlan on a set of user-provided taxa? Default is building a tree using FastTree"
+                },
+                "phylophlan_nref": {
+                    "type": "number",
+                    "default": 10,
+                    "description": "Number of reference genomes to include in the phylogeny"
+                },
+                "phylophlan_diversity": {
+                    "type": "string",
+                    "default": "low",
+                    "description": "The diversity preset for Phylophlan"
+                },
+                "taxa_oi": {
+                    "type": "string",
+                    "description": "Provide a list of taxa of interest and grab them from the filtered bins. Supply a tab-separated file consisting of species names (in 's__Species_genus' format), genus name, and an outgroup to use for phylophlan (also following 's__Species_genus' format)"
                 }
             }
         },

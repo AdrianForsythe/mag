@@ -82,6 +82,7 @@ include { CAT_DB_GENERATE                                     } from '../modules
 include { CAT                                                 } from '../modules/local/cat'
 include { BIN_SUMMARY                                         } from '../modules/local/bin_summary'
 include { COMBINE_TSV                                         } from '../modules/local/combine_tsv'
+include { PHYLOPHLAN                                          } from '../modules/local/phylophlan'
 include { MULTIQC                                             } from '../modules/local/multiqc'
 
 //
@@ -693,6 +694,22 @@ workflow MAG {
     CUSTOM_DUMPSOFTWAREVERSIONS (
         ch_versions.unique().collectFile(name: 'collated_versions.yml')
     )
+
+    //
+    // MODULE: Phylophlan
+    //
+
+    if ( phylophlan ){
+
+    ch_taxa_oi = Channel
+        .fromPath(params.taxa_oi)
+        .splitCsv(sep: '\t')
+            .map { species, genus, outgroup -> [ it[0], [it[1], it[2]] ] }
+            .ifEmpty([])
+
+    // TODO: routine for considering all bins? not just filtered ones.
+    PHYLOPHLAN ( ch_taxa_oi, GTDBTK_CLASSIFY.out.summary.collect().ifEmpty([]), GTDBTK.ch_filtered_bins.collect().ifEmpty([]), PROKKA.out.fna.collect().ifEmpty([]))
+    }
 
     //
     // MODULE: MultiQC
