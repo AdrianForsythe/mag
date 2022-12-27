@@ -1,5 +1,5 @@
 process PYDAMAGE_ANALYZE {
-    tag "$meta.id"
+    tag "${meta.assembler}-${meta.id}"
     label 'process_medium'
 
     conda (params.enable_conda ? "bioconda::pydamage=0.70" : null)

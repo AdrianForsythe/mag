@@ -24,7 +24,7 @@
                     "type": "boolean",
                     "description": "Specifies that the input is single-end reads.",
                     "fa_icon": "fas fa-align-center",
-                    "help_text": "By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--input`. For example:\n\n```bash\n--single_end --input '*.fastq'\n```\n\nIt is not possible to run a mixture of single-end and paired-end files in one run."
+                    "help_text": "By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--single_end` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--input`. For example:\n\n```bash\n--single_end --input '*.fastq.gz'\n```\n\nIt is not possible to run a mixture of single-end and paired-end files in one run."
                 },
                 "outdir": {
                     "type": "string",
@@ -269,6 +269,24 @@
             },
             "help_text": ""
         },
+        "start from bins": {
+            "title": "Options for starting from bins",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "refined_bins": {
+                    "type": "string"
+                },
+                "refined_unbins": {
+                    "type": "string"
+                },
+                "refined_depths_summary": {
+                    "type": "string"
+                }
+            },
+            "help_text": ""
+        },
         "quality_control_for_short_reads_options": {
             "title": "Quality control for short reads options",
             "type": "object",
@@ -280,6 +298,24 @@
                     "default": "fastp",
                     "description": "Specify which adapter clipping tool to use. Options: 'fastp', 'adapterremoval'",
                     "enum": ["fastp", "adapterremoval"]
+                },
+                "skip_fastp": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip fastp quality control for short reads.",
+                    "help_text": "Use this option to skip fastp quality control for short reads. This is useful if you have already done the quality control and you want to skip it again.\n\nDefault: fastp quality control is performed."
+                },
+                "skip_sr_adapter_trimming": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip adapter removal for short reads.",
+                    "help_text": "Use this option to skip adapter removal for short reads. This is useful if you have already done the adapter removal and you want to skip it again.\n\nDefault: adapter removal is performed."
+                },
+                "skip_fastqc": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip fastqc quality control for short reads.",
+                    "help_text": "Use this option to skip fastqc quality control for short reads. This is useful if you have already done the quality control and you want to skip it again.\n\nDefault: fastqc quality control is performed."
                 },
                 "reads_minlength": {
                     "type": "integer",
@@ -322,6 +358,12 @@
                     "default": "AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATCTCGGTGGTCGCCGTATCATT",
                     "description": "Reverse read adapter to be trimmed by AdapterRemoval for paired end data."
                 },
+                "skip_host_removal": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Skip host removal for short reads.",
+                    "help_text": "Use this option to skip host removal for short reads. This is useful if you have already done the host removal and you want to skip it again.\n\nDefault: host removal is performed."
+                },
                 "host_genome": {
                     "type": "string",
                     "help_text": "This parameter is mutually exclusive with `--host_genome`. Host read removal is done with Bowtie2. \nBoth the iGenomes FASTA file as well as corresponding, already pre-built Bowtie 2 index files will be used.",
@@ -358,7 +400,7 @@
             "description": "",
             "default": "",
             "properties": {
-                "skip_adapter_trimming": {
+                "skip_lr_adapter_trimming": {
                     "type": "boolean",
                     "description": "Skip removing adapter sequences from long reads."
                 },
@@ -396,6 +438,10 @@
             "description": "Taxonomic classification is disabled by default. You have to specify one of the options below to activate it.",
             "default": "",
             "properties": {
+                "skip_taxonomic_classification": {
+                    "type": "boolean",
+                    "description": "Skip taxonomic profiling."
+                },
                 "centrifuge_db": {
                     "type": "string",
                     "description": "Database for taxonomic binning with centrifuge.",

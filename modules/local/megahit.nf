@@ -23,7 +23,6 @@ process MEGAHIT {
         """
         megahit $args -t "${task.cpus}" -m $mem $input -o MEGAHIT --out-prefix "MEGAHIT-${meta.id}"
         gzip -c "MEGAHIT/MEGAHIT-${meta.id}.contigs.fa" > "MEGAHIT/MEGAHIT-${meta.id}.contigs.fa.gz"
-
         cat <<-END_VERSIONS > versions.yml
         "${task.process}":
             megahit: \$(echo \$(megahit -v 2>&1) | sed 's/MEGAHIT v//')

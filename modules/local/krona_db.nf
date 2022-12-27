@@ -9,6 +9,9 @@ process KRONA_DB {
     path("taxonomy/taxonomy.tab"), emit: db
     path "versions.yml"          , emit: versions
 
+    when:
+    !params.skip_taxonomic_classification && !params.skip_krona
+
     script:
     """
     ktUpdateTaxonomy.sh taxonomy

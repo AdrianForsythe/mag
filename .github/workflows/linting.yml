@@ -45,7 +45,7 @@ jobs:
         env:
           CAPSULE_LOG: none
         run: |
-          wget -qO- get.nextflow.io | bash
+          wget --no-check-certificate -qO- get.nextflow.io | bash
           sudo mv nextflow /usr/local/bin/
 
       - uses: actions/setup-python@v3
