@@ -1,5 +1,5 @@
 process PYDAMAGE_FILTER {
-    tag "$meta.id"
+    tag "${meta.assembler}-${meta.id}"
     label 'process_low'
 
     conda (params.enable_conda ? "bioconda::pydamage=0.70" : null)

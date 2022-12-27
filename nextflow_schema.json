@@ -269,6 +269,24 @@
             },
             "help_text": ""
         },
+        "start from bins": {
+            "title": "Options for starting from bins",
+            "type": "object",
+            "description": "",
+            "default": "",
+            "properties": {
+                "refined_bins": {
+                    "type": "string"
+                },
+                "refined_unbins": {
+                    "type": "string"
+                },
+                "refined_depths_summary": {
+                    "type": "string"
+                }
+            },
+            "help_text": ""
+        },
         "quality_control_for_short_reads_options": {
             "title": "Quality control for short reads options",
             "type": "object",

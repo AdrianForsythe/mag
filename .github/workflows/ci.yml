@@ -39,7 +39,7 @@ jobs:
           # See https://github.com/nextflow-io/nextflow/issues/2467
           # NXF_EDGE: ${{ matrix.NXF_EDGE }}
         run: |
-          wget -qO- get.nextflow.io | bash
+          wget --no-check-certificate -qO- get.nextflow.io | bash
           sudo mv nextflow /usr/local/bin/
 
       - name: Run pipeline with test data
@@ -70,7 +70,7 @@ jobs:
 
       - name: Install Nextflow
         run: |
-          wget -qO- get.nextflow.io | bash
+          wget --no-check-certificate -qO- get.nextflow.io | bash
           sudo mv nextflow /usr/local/bin/
 
       - name: Run pipeline with ${{ matrix.profile }} test profile
